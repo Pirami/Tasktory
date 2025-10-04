@@ -1,0 +1,193 @@
+{
+  "name": "WBS Creation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "wbs-creation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.JIRA_URL}}/rest/api/3/issue",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "={{{\n  \"project\": {\n    \"key\": \"PROJ\"\n  },\n  \"summary\": \"{{$json.wbs_items[0].title}}\",\n  \"description\": \"{{$json.wbs_items[0].description}}\",\n  \"issuetype\": {\n    \"name\": \"Task\"\n  }\n}}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-jira-issues",
+      "name": "Create Jira Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.CONFLUENCE_URL}}/wiki/rest/api/content",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "confluenceApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "page"
+            },
+            {
+              "name": "title",
+              "value": "WBS - Project {{$json.project_id}}"
+            },
+            {
+              "name": "space",
+              "value": "{{$env.CONFLUENCE_SPACE_KEY}}"
+            },
+            {
+              "name": "body",
+              "value": "={{{\n  \"storage\": {\n    \"value\": \"<h1>Work Breakdown Structure</h1><p>Project ID: {{$json.project_id}}</p><ul>{{#each $json.wbs_items}}<li><strong>{{title}}</strong> - {{description}} ({{skill_level_required}})</li>{{/each}}</ul>\",\n    \"representation\": \"storage\"\n  }\n}}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-confluence-page",
+      "name": "Create Confluence Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.notion.com/v1/pages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.NOTION_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "parent",
+              "value": "={{{\n  \"database_id\": \"{{$env.NOTION_DATABASE_ID}}\"\n}}}"
+            },
+            {
+              "name": "properties",
+              "value": "={{{\n  \"Title\": {\n    \"title\": [\n      {\n        \"text\": {\n          \"content\": \"WBS - Project {{$json.project_id}}\"\n        }\n      }\n    ]\n  },\n  \"Status\": {\n    \"select\": {\n      \"name\": \"In Progress\"\n    }\n  }\n}}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-notion-page",
+      "name": "Create Notion Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{{\n  \"success\": true,\n  \"execution_id\": \"{{$workflow.id}}\",\n  \"message\": \"WBS created successfully\"\n}}}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Create Jira Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Jira Issues": {
+      "main": [
+        [
+          {
+            "node": "Create Confluence Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Confluence Page": {
+      "main": [
+        [
+          {
+            "node": "Create Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}

@@ -1,0 +1,214 @@
+{
+  "name": "N8n MCP WBS Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mcp-wbs",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// WBS 데이터를 Jira 이슈 생성용으로 변환\nconst wbsData = $input.first().json;\nconst deliverables = wbsData.deliverables || [];\n\nlet jiraIssues = [];\nlet issueCounter = 1;\n\nfor (const deliverable of deliverables) {\n  // 우선순위별로 정렬\n  const tasks = deliverable.tasks.sort((a, b) => {\n    const priorityOrder = { 'High': 3, 'Medium': 2, 'Low': 1 };\n    return priorityOrder[b.priority] - priorityOrder[a.priority];\n  });\n\n  for (const task of tasks) {\n    jiraIssues.push({\n      task_id: `TASK-${issueCounter.toString().padStart(3, '0')}`,\n      summary: task.task_name,\n      description: `${task.task_description}\\n\\n담당자: ${task.assigned_to}\\n필요 기술: ${task.required_skill}\\n우선순위: ${task.priority}\\n할당 근거: ${task.skill_match_reason}`,\n      assignee: task.assigned_to,\n      priority: task.priority,\n      labels: [task.required_skill.replace(/\\s*,\\s*/g, ',').split(',')].flat(),\n      project_key: `PROJ-${wbsData.project_id}`\n    });\n    issueCounter++;\n  }\n}\n\nreturn { jiraIssues, summary: {\n  total_issues: jiraIssues.length,\n  high_priority: jiraIssues.filter(i => i.priority === 'High').length,\n  medium_priority: jiraIssues.filter(i => i.priority === 'Medium').length,\n  low_priority: jiraIssues.filter(i => i.priority === 'Low').length\n}};"
+      },
+      "id": "transform-wbs-data",
+      "name": "Transform WBS Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.JIRA_URL}}/rest/api/3/issue/bulk",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "issueUpdates",
+              "value": "={{$json.jiraIssues.map(issue => ({\n  update: {},\n  fields: {\n    project: { key: issue.project_key },\n    summary: issue.summary,\n    description: { type: 'doc', version: 1, content: [{ type: 'paragraph', content: [{ type: 'text', text: issue.description }] }] },\n    issuetype: { name: 'Task' },\n    priority: { name: issue.priority === 'High' ? 'Highest' : issue.priority === 'Medium' ? 'Medium' : 'Lowest' },\n    assignee: { name: issue.assignee },\n    labels: issue.labels\n  }\n}))}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-jira-issues",
+      "name": "Create Jira Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.CONFLUENCE_URL}}/wiki/rest/api/content",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "confluenceApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "page"
+            },
+            {
+              "name": "title",
+              "value": "커서 AI WBS - Project {{$('Webhook Trigger').first().json.project_id}}"
+            },
+            {
+              "name": "space",
+              "value": "{{$env.CONFLUENCE_SPACE_KEY}}"
+            },
+            {
+              "name": "body",
+              "value": "={{\n  \"storage\": {\n    \"value\": `<h1>커서 AI 기반 WBS</h1>\n    <h2>프로젝트 개요</h2>\n    <p>{{$('Webhook Trigger').first().json.wbs_data.project_overview}}</p>\n    \n    <h2>작업 분배 현황</h2>\n    <table>\n      <thead>\n        <tr>\n          <th>우선순위</th>\n          <th>작업 수</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr><td>High</td><td>{{$('Transform WBS Data').first().json.summary.high_priority}}</td></tr>\n        <tr><td>Medium</td><td>{{$('Transform WBS Data').first().json.summary.medium_priority}}</td></tr>\n        <tr><td>Low</td><td>{{$('Transform WBS Data').first().json.summary.low_priority}}</td></tr>\n      </tbody>\n    </table>\n    \n    <h2>팀 할당 현황</h2>\n    {{#each wbs_data.team_assignment}}\n      <h3>{{name}}</h3>\n      <p>역할: {{role}}</p>\n      <p>담당 작업 수: {{task_count}}</p>\n    {{/each}}\n    `,\n    \"representation\": \"storage\"\n  }\n}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-confluence-page",
+      "name": "Create Confluence Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.notion.com/v1/pages",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{$env.NOTION_API_KEY}}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "parent",
+              "value": "={{{\n  \"database_id\": \"{{$env.NOTION_DATABASE_ID}}\"\n}}}"
+            },
+            {
+              "name": "properties",
+              "value": "={{{\n  \"Title\": {\n    \"title\": [\n      {\n        \"text\": {\n          \"content\": \"커서 AI WBS - Project {{$('Webhook Trigger').first().json.project_id}}\"\n        }\n      }\n    ]\n  },\n  \"Status\": {\n    \"select\": {\n      \"name\": \"In Progress\"\n    }\n  },\n  \"Total Tasks\": {\n    \"number\": {{$('Transform WBS Data').first().json.summary.total_issues}}\n  },\n  \"High Priority Tasks\": {\n    \"number\": {{$('Transform WBS Data').first().json.summary.high_priority}}\n  }\n}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "create-notion-page",
+      "name": "Create Notion Page",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{{\n  \"success\": true,\n  \"execution_id\": \"{{$workflow.id}}\",\n  \"project_id\": {{$('Webhook Trigger').first().json.project_id}},\n  \"message\": \"커서 AI WBS 처리가 완료되었습니다\",\n  \"jira_tickets\": {{$json.length || 0}},\n  \"confluence_page_url\": \"{{$('Create Confluence Page').first().json._links?.webui || '생성됨'}}\",\n  \"notion_page_id\": \"{{$json.id || '생성됨'}}\",\n  \"summary\": {{\n    \"total_issues_created\": {{$('Transform WBS Data').first().json.summary.total_issues}},\n    \"deliverables_processed\": {{$('Webhook Trigger').first().json.wbs_data.deliverables.length}}\n  }}\n}}}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1340, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Transform WBS Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transform WBS Data": {
+      "main": [
+        [
+          {
+            "node": "Create Jira Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Jira Issues": {
+      "main": [
+        [
+          {
+            "node": "Create Confluence Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Confluence Page": {
+      "main": [
+        [
+          {
+            "node": "Create Notion Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Notion Page": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}

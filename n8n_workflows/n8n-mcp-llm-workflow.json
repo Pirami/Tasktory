@@ -1,0 +1,103 @@
+{
+  "name": "N8n MCP LLM Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mcp-llm",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "model": "={{$json.model_config.model || 'gpt-4'}}",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "content": "={{$json.model_config.system_message || '당신은 AI 프로젝트 아키텍트입니다.'}}"
+            },
+            {
+              "role": "user",
+              "content": "={{$json.prompt}}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": "={{$json.model_config.temperature || 0.3}}",
+          "maxTokens": "={{$json.model_config.max_tokens || 4000}}"
+        }
+      },
+      "id": "openai-node",
+      "name": "OpenAI LLM",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// LLM 응답을 구조화된 형식으로 변환\nconst llmResponse = $input.first().json;\nconst originalInput = $('Webhook Trigger').first().json;\n\n// JSON 추출 로직\nlet extractedJson = null;\nlet rawText = llmResponse.message?.content || llmResponse.choices?.[0]?.message?.content || '';\n\n// JSON 부분 찾기\nconst jsonStart = rawText.indexOf('{');\nconst jsonEnd = rawText.lastIndexOf('}') + 1;\n\nif (jsonStart !== -1 && jsonEnd > jsonStart) {\n  try {\n    const jsonStr = rawText.substring(jsonStart, jsonEnd);\n    extractedJson = JSON.parse(jsonStr);\n  } catch (e) {\n    console.error('JSON 파싱 오류:', e);\n  }\n}\n\nreturn {\n  llm_response: rawText,\n  extracted_json: extractedJson,\n  status: extractedJson ? 'success' : 'failed',\n  error: extractedJson ? null : 'JSON을 추출할 수 없습니다',\n  execution_id: $workflow.id,\n  timestamp: new Date().toISOString(),\n  original_input: {\n    project_id: originalInput.input_data?.project_id,\n    model_config: originalInput.model_config\n  }\n};"
+      },
+      "id": "parse-response",
+      "name": "Parse LLM Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "webhook-response",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [900, 300]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "OpenAI LLM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI LLM": {
+      "main": [
+        [
+          {
+            "node": "Parse LLM Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse LLM Response": {
+      "main": [
+        [
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}
