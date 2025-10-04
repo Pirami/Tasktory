@@ -9,7 +9,6 @@ from datetime import datetime
 
 from app.core.database import get_db
 from app.models.project import Meeting
-from app.services.meeting_processor import MeetingProcessor
 
 router = APIRouter()
 
