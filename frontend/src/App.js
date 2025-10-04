@@ -9,6 +9,8 @@ import WBSGenerator from './pages/WBSGenerator';
 import Meetings from './pages/Meetings';
 import Documents from './pages/Documents';
 import Settings from './pages/Settings';
+import TeamManagement from './pages/TeamManagement';
+import ProjectMemberManagement from './pages/ProjectMemberManagement';
 
 function App() {
   return (
@@ -33,6 +35,8 @@ function App() {
           <Route path="/meetings" element={<Meetings />} />
           <Route path="/documents" element={<Documents />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/team-management" element={<TeamManagement />} />
+          <Route path="/project-member-management" element={<ProjectMemberManagement />} />
         </Routes>
       </Box>
     </Box>

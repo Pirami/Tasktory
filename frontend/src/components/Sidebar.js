@@ -18,6 +18,8 @@ import {
   MeetingRoom as MeetingsIcon,
   Description as DocumentsIcon,
   Settings as SettingsIcon,
+  People as PeopleIcon,
+  GroupAdd as GroupAddIcon,
 } from '@mui/icons-material';
 
 const drawerWidth = 240;
@@ -28,6 +30,8 @@ const menuItems = [
   { text: 'WBS 생성', icon: <WBSIcon />, path: '/wbs-generator' },
   { text: '회의 관리', icon: <MeetingsIcon />, path: '/meetings' },
   { text: '문서 관리', icon: <DocumentsIcon />, path: '/documents' },
+  { text: '팀원 관리', icon: <PeopleIcon />, path: '/team-management' },
+  { text: '멤버 관리', icon: <GroupAddIcon />, path: '/project-member-management' },
   { text: '설정', icon: <SettingsIcon />, path: '/settings' },
 ];
 

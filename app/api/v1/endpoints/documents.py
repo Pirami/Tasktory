@@ -8,7 +8,6 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.models.project import Document
-from app.services.document_generator import DocumentGenerator
 
 router = APIRouter()
 

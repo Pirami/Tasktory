@@ -72,6 +72,9 @@ Base.metadata.create_all(bind=engine)
 print('✅ 데이터베이스 초기화 완료')
 "
 
+# 샘플 데이터 생성 (선택사항)
+python create_sample_data.py
+
 # 서버 시작
 PYTHONPATH=. python app/main.py
 ```
@@ -89,7 +92,7 @@ cd Tasktory
 ### 3. 접속 확인
 
 - **백엔드 API**: http://localhost:8000/docs
-- **프론트엔드**: http://localhost:3000
+- **프론트엔드**: http://localhost:3001 (포트 3000이 사용 중일 경우)
 - **헬스 체크**: http://localhost:8000/health
 
 ## 프론트엔드 기능
@@ -98,8 +101,10 @@ cd Tasktory
 
 - 프로젝트 통계 및 현황
 - 최근 활동 내역
-- 빠른 작업 버튼
+- **6가지 빠른 작업 버튼** (새 프로젝트, WBS 생성, 회의록 작성, 문서 생성, 팀원 추가, 멤버 관리)
 - 프로젝트 생성 추이 차트
+- **원클릭 프로젝트 생성** (템플릿 기반)
+- **원클릭 WBS 생성** (AI 기반)
 
 ### 📁 프로젝트 관리
 
@@ -129,6 +134,20 @@ cd Tasktory
 - 산출물 템플릿 적용
 - 문서 유형별 분류
 - 파일 업로드 및 다운로드
+
+### 👥 팀원 관리 ⭐ NEW
+
+- **팀원 CRUD 기능** (추가, 조회, 수정, 삭제)
+- **상세 정보 관리** (이름, 이메일, 부서, 직책, 경력, 기술 스택, 숙련도)
+- **가용성 관리** (프로젝트 참여 가능 여부)
+- **통계 대시보드** (총 팀원 수, 활성 멤버, 시니어급, 부서 수)
+
+### 🔗 프로젝트 멤버 관리 ⭐ NEW
+
+- **멤버 할당** (프로젝트에 팀원 추가/제거)
+- **역할 관리** (프로젝트 내 역할 및 담당 업무 설정)
+- **할당 비율** (멤버별 작업 할당 비율 관리)
+- **기간 관리** (프로젝트 참여 시작/종료일 설정)
 
 ### ⚙️ 시스템 설정
 
@@ -165,6 +184,18 @@ cd Tasktory
 - `POST /api/v1/wbs/items` - WBS 아이템 생성
 - `GET /api/v1/wbs/items` - WBS 아이템 목록
 - `POST /api/v1/wbs/generate` - WBS 자동 생성
+
+### 팀 관리 ⭐ NEW
+
+- `GET /api/v1/team/team-members` - 팀원 목록 조회
+- `POST /api/v1/team/team-members` - 팀원 생성
+- `PUT /api/v1/team/team-members/{id}` - 팀원 수정
+- `DELETE /api/v1/team/team-members/{id}` - 팀원 삭제
+- `GET /api/v1/team/projects/{id}/members` - 프로젝트 멤버 목록
+- `POST /api/v1/team/projects/{id}/members` - 프로젝트 멤버 추가
+- `DELETE /api/v1/team/projects/{id}/members/{member_id}` - 프로젝트 멤버 제거
+- `GET /api/v1/team/project-templates` - 프로젝트 템플릿 목록
+- `POST /api/v1/team/quick-create-project` - 빠른 프로젝트 생성
 
 ## n8n 워크플로우
 
@@ -253,7 +284,7 @@ Tasktory/
    ./start_frontend.sh
    ```
 
-3. **접속**: http://localhost:3000
+3. **접속**: http://localhost:3001 (포트 3000이 사용 중일 경우)
 
 ### 새로운 서비스 추가
 

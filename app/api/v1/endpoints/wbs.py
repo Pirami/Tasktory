@@ -7,8 +7,8 @@ from typing import List
 from pydantic import BaseModel
 
 from app.core.database import get_db
-from app.models.project import WBSItem, TeamMember
-from app.services.requirement_extractor import RequirementExtractor
+from app.models.project import WBSItem
+from app.models.team import TeamMember
 
 router = APIRouter()
 

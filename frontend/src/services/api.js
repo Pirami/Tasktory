@@ -159,6 +159,42 @@ export const settingsAPI = {
   testConnection: (service) => api.post('/api/v1/settings/test-connection', { service }),
 };
 
+// 팀 관련 API
+export const teamAPI = {
+  // 팀원 목록 조회
+  getTeamMembers: (params) => api.get('/api/v1/team/team-members', { params }),
+  
+  // 팀원 생성
+  createTeamMember: (data) => api.post('/api/v1/team/team-members', data),
+  
+  // 팀원 상세 조회
+  getTeamMember: (id) => api.get(`/api/v1/team/team-members/${id}`),
+  
+  // 팀원 수정
+  updateTeamMember: (id, data) => api.put(`/api/v1/team/team-members/${id}`, data),
+  
+  // 팀원 삭제
+  deleteTeamMember: (id) => api.delete(`/api/v1/team/team-members/${id}`),
+  
+  // 프로젝트 멤버 목록 조회
+  getProjectMembers: (projectId) => api.get(`/api/v1/team/projects/${projectId}/members`),
+  
+  // 프로젝트 멤버 추가
+  addProjectMember: (projectId, data) => api.post(`/api/v1/team/projects/${projectId}/members`, data),
+  
+  // 프로젝트 멤버 제거
+  removeProjectMember: (projectId, memberId) => api.delete(`/api/v1/team/projects/${projectId}/members/${memberId}`),
+  
+  // 프로젝트 템플릿 목록 조회
+  getProjectTemplates: (params) => api.get('/api/v1/team/project-templates', { params }),
+  
+  // 프로젝트 템플릿 생성
+  createProjectTemplate: (data) => api.post('/api/v1/team/project-templates', data),
+  
+  // 빠른 프로젝트 생성
+  quickCreateProject: (data) => api.post('/api/v1/team/quick-create-project', data),
+};
+
 // 시스템 관련 API
 export const systemAPI = {
   // 헬스 체크

@@ -8,9 +8,6 @@ from pydantic import BaseModel
 
 from app.core.database import get_db
 from app.models.project import Project
-from app.services.requirement_extractor import RequirementExtractor
-from app.services.document_generator import DocumentGenerator
-from app.services.deliverable_automation import DeliverableAutomation
 from app.services.n8n_mcp_service import N8nMCPService
 
 router = APIRouter()
