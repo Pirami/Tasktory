@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 // API 기본 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
+
+console.log('API Base URL:', API_BASE_URL);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -14,6 +16,7 @@ const api = axios.create({
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
     // 토큰이 있다면 헤더에 추가
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -22,6 +25,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -29,9 +33,17 @@ api.interceptors.request.use(
 // 응답 인터셉터
 api.interceptors.response.use(
   (response) => {
+    console.log('API Response:', response.status, response.data);
     return response;
   },
   (error) => {
+    console.error('API Response Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      request: error.request
+    });
     if (error.response?.status === 401) {
       // 인증 오류 처리
       localStorage.removeItem('auth_token');
@@ -127,6 +139,16 @@ export const documentAPI = {
   downloadDocument: (id) => api.get(`/api/v1/documents/${id}/download`, {
     responseType: 'blob',
   }),
+  
+  // 파일 업로드
+  uploadFile: (formData) => api.post('/api/v1/documents/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  
+  // 문서 내용 조회
+  getDocumentContent: (id) => api.get(`/api/v1/documents/${id}/content`),
 };
 
 // WBS 관련 API
