@@ -187,7 +187,7 @@ const Dashboard = () => {
     {
       icon: <AccountTreeIcon />,
       name: 'WBS 생성',
-      action: () => setOpenQuickWBS(true),
+      action: () => navigate('/wbs-generator'),
       color: 'secondary',
     },
     {
@@ -242,6 +242,37 @@ const Dashboard = () => {
       <Typography variant="h4" component="h1" gutterBottom sx={{ mb: 3 }}>
         대시보드
       </Typography>
+
+      {/* 빠른 작업 */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            빠른 작업
+          </Typography>
+          <Grid container spacing={2}>
+            {quickActions.map((action, index) => (
+              <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
+                <Button
+                  variant={index === 0 ? "contained" : "outlined"}
+                  startIcon={action.icon}
+                  fullWidth
+                  sx={{ 
+                    height: 80,
+                    flexDirection: 'column',
+                    gap: 1,
+                    color: action.color === 'primary' ? 'white' : undefined,
+                  }}
+                  onClick={action.action}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    {action.name}
+                  </Typography>
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
 
       {/* 통계 카드 */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
@@ -342,39 +373,6 @@ const Dashboard = () => {
                 모든 활동 보기
               </Button>
             </CardActions>
-          </Card>
-        </Grid>
-
-        {/* 빠른 작업 */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                빠른 작업
-              </Typography>
-              <Grid container spacing={2}>
-                {quickActions.map((action, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                    <Button
-                      variant={index === 0 ? "contained" : "outlined"}
-                      startIcon={action.icon}
-                      fullWidth
-                      sx={{ 
-                        height: 80,
-                        flexDirection: 'column',
-                        gap: 1,
-                        color: action.color === 'primary' ? 'white' : undefined,
-                      }}
-                      onClick={action.action}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        {action.name}
-                      </Typography>
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
           </Card>
         </Grid>
       </Grid>

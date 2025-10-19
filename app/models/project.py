@@ -14,6 +14,8 @@ class Project(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     status = Column(String(50), default="planning")  # planning, active, completed, cancelled
+    start_date = Column(DateTime, nullable=True)  # 프로젝트 시작일
+    end_date = Column(DateTime, nullable=True)  # 프로젝트 종료일
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

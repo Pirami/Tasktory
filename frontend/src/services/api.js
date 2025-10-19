@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // API 기본 설정
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8001';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 console.log('API Base URL:', API_BASE_URL);
 
@@ -76,11 +76,24 @@ export const projectAPI = {
   // MCP WBS 생성
   generateMCPWBS: (data) => api.post('/api/v1/projects/generate-mcp-wbs', data),
   
+  // 고도화된 WBS 생성
+  generateEnhancedWBS: (data) => api.post('/api/v1/projects/generate-enhanced-wbs', data),
+  
+  // 프로젝트 팀원 정보 조회
+  getProjectTeamMembers: (projectId) => api.get(`/api/v1/team/projects/${projectId}/members`),
+  
   // 설계문서 생성
   generateDocuments: (data) => api.post('/api/v1/projects/generate-documents', data),
   
   // 산출물 생성
   generateDeliverables: (data) => api.post('/api/v1/projects/generate-deliverables', data),
+  
+  // 외부 플랫폼 연동
+  exportToJira: (projectId, wbsData) => api.post(`/api/v1/projects/${projectId}/export/jira`, wbsData),
+  
+  exportToConfluence: (projectId, wbsData) => api.post(`/api/v1/projects/${projectId}/export/confluence`, wbsData),
+  
+  exportToNotion: (projectId, wbsData) => api.post(`/api/v1/projects/${projectId}/export/notion`, wbsData),
 };
 
 // 회의 관련 API
@@ -169,17 +182,6 @@ export const wbsAPI = {
   generateWBS: (data) => api.post('/api/v1/wbs/generate', data),
 };
 
-// 설정 관련 API
-export const settingsAPI = {
-  // 설정 조회
-  getSettings: () => api.get('/api/v1/settings'),
-  
-  // 설정 저장
-  saveSettings: (data) => api.put('/api/v1/settings', data),
-  
-  // 연결 테스트
-  testConnection: (service) => api.post('/api/v1/settings/test-connection', { service }),
-};
 
 // 팀 관련 API
 export const teamAPI = {
@@ -203,6 +205,9 @@ export const teamAPI = {
   
   // 프로젝트 멤버 추가
   addProjectMember: (projectId, data) => api.post(`/api/v1/team/projects/${projectId}/members`, data),
+  
+  // 프로젝트 멤버 수정
+  updateProjectMember: (projectId, memberId, data) => api.put(`/api/v1/team/projects/${projectId}/members/${memberId}`, data),
   
   // 프로젝트 멤버 제거
   removeProjectMember: (projectId, memberId) => api.delete(`/api/v1/team/projects/${projectId}/members/${memberId}`),
@@ -233,6 +238,18 @@ export const systemAPI = {
   
   // 백업 목록
   getBackups: () => api.get('/api/v1/system/backups'),
+};
+
+// 설정 관련 API
+export const settingsAPI = {
+  // 설정 조회
+  getSettings: () => api.get('/api/v1/settings/'),
+  
+  // 설정 업데이트
+  updateSettings: (data) => api.put('/api/v1/settings/', data),
+  
+  // 연결 테스트
+  testConnection: (service) => api.post('/api/v1/settings/test-connection', { service }),
 };
 
 // 파일 업로드 유틸리티

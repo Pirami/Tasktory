@@ -32,7 +32,7 @@ import {
   Delete as DeleteIcon,
   Add as AddIcon,
 } from '@mui/icons-material';
-import axios from 'axios';
+import { settingsAPI } from '../services/api';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
@@ -78,20 +78,21 @@ const Settings = () => {
 
   const loadSettings = async () => {
     try {
-      const response = await axios.get('/api/v1/settings');
+      const response = await settingsAPI.getSettings();
       setSettings(response.data);
     } catch (error) {
-      console.error('Failed to load settings:', error);
+      console.error('설정 로드 실패:', error);
     }
   };
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await axios.put('/api/v1/settings', settings);
+      await settingsAPI.updateSettings(settings);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000);
     } catch (error) {
+      console.error('설정 저장 오류:', error);
       setSaveStatus('error');
       setTimeout(() => setSaveStatus(null), 3000);
     } finally {
@@ -101,9 +102,10 @@ const Settings = () => {
 
   const handleTestConnection = async (service) => {
     try {
-      const response = await axios.post('/api/v1/settings/test-connection', { service });
+      const response = await settingsAPI.testConnection(service);
       setTestResult({ service, success: true, message: response.data.message });
     } catch (error) {
+      console.error('연결 테스트 오류:', error);
       setTestResult({ service, success: false, message: error.response?.data?.detail || '연결 실패' });
     }
     setOpenDialog(true);

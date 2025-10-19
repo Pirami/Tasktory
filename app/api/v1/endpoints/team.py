@@ -330,6 +330,39 @@ async def add_project_member(
     
     return db_member
 
+@router.put("/projects/{project_id}/members/{member_id}")
+async def update_project_member(
+    project_id: int,
+    member_id: int,
+    project_member: ProjectMemberCreate,
+    db: Session = Depends(get_db)
+):
+    """프로젝트 멤버 정보 수정"""
+    db_member = db.query(ProjectMember).filter(
+        ProjectMember.project_id == project_id,
+        ProjectMember.id == member_id
+    ).first()
+    
+    if not db_member:
+        raise HTTPException(status_code=404, detail="프로젝트 멤버를 찾을 수 없습니다")
+    
+    # 업데이트할 필드들
+    update_data = project_member.dict(exclude_unset=True)
+    
+    for field, value in update_data.items():
+        setattr(db_member, field, value)
+    
+    db.commit()
+    db.refresh(db_member)
+    
+    # skills를 리스트로 변환
+    if db_member.team_member.skills:
+        db_member.team_member.skills = json.loads(db_member.team_member.skills)
+    else:
+        db_member.team_member.skills = []
+    
+    return db_member
+
 @router.delete("/projects/{project_id}/members/{member_id}")
 async def remove_project_member(
     project_id: int,

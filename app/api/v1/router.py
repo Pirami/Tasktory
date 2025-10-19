@@ -2,7 +2,7 @@
 API v1 라우터
 """
 from fastapi import APIRouter
-from app.api.v1.endpoints import projects, meetings, documents, wbs, team
+from app.api.v1.endpoints import projects, meetings, documents, wbs, team, settings
 
 router = APIRouter()
 
@@ -12,3 +12,4 @@ router.include_router(meetings.router, prefix="/meetings", tags=["meetings"])
 router.include_router(documents.router, prefix="/documents", tags=["documents"])
 router.include_router(wbs.router, prefix="/wbs", tags=["wbs"])
 router.include_router(team.router, prefix="/team", tags=["team"])
+router.include_router(settings.router, prefix="/settings", tags=["settings"])
