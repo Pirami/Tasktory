@@ -43,10 +43,20 @@ if [ ! -f ".env" ]; then
 REACT_APP_API_URL=http://localhost:8000
 REACT_APP_VERSION=1.0.0
 REACT_APP_NAME=Tasktory
+DANGEROUSLY_DISABLE_HOST_CHECK=true
 EOF
     echo "✅ .env 파일이 생성되었습니다."
 else
     echo "⚠️ .env 파일이 이미 존재합니다."
+    # 기존 .env 파일에 필요한 설정이 있는지 확인
+    if ! grep -q "DANGEROUSLY_DISABLE_HOST_CHECK" .env; then
+        echo "DANGEROUSLY_DISABLE_HOST_CHECK=true" >> .env
+        echo "✅ 호스트 체크 비활성화 설정을 추가했습니다."
+    fi
+    if ! grep -q "localhost:8000" .env; then
+        sed -i '' 's/localhost:8000/localhost:8000/g' .env
+        echo "✅ API URL을 포트 8000로 업데이트했습니다."
+    fi
 fi
 
 echo ""

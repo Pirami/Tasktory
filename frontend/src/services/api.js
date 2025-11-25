@@ -3,6 +3,8 @@ import axios from 'axios';
 // API 기본 설정
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
+console.log('API Base URL:', API_BASE_URL);
+
 const api = axios.create({
   baseURL: API_BASE_URL,
   timeout: 30000,
@@ -14,6 +16,7 @@ const api = axios.create({
 // 요청 인터셉터
 api.interceptors.request.use(
   (config) => {
+    console.log('API Request:', config.method?.toUpperCase(), config.url, config.data);
     // 토큰이 있다면 헤더에 추가
     const token = localStorage.getItem('auth_token');
     if (token) {
@@ -22,6 +25,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('API Request Error:', error);
     return Promise.reject(error);
   }
 );
@@ -29,9 +33,17 @@ api.interceptors.request.use(
 // 응답 인터셉터
 api.interceptors.response.use(
   (response) => {
+    console.log('API Response:', response.status, response.data);
     return response;
   },
   (error) => {
+    console.error('API Response Error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      code: error.code,
+      response: error.response,
+      request: error.request
+    });
     if (error.response?.status === 401) {
       // 인증 오류 처리
       localStorage.removeItem('auth_token');
@@ -64,11 +76,24 @@ export const projectAPI = {
   // MCP WBS 생성
   generateMCPWBS: (data) => api.post('/api/v1/projects/generate-mcp-wbs', data),
   
+  //  WBS 생성
+  generateEnhancedWBS: (data) => api.post('/api/v1/projects/generate-enhanced-wbs', data),
+  
+  // 프로젝트 팀원 정보 조회
+  getProjectTeamMembers: (projectId) => api.get(`/api/v1/team/projects/${projectId}/members`),
+  
   // 설계문서 생성
   generateDocuments: (data) => api.post('/api/v1/projects/generate-documents', data),
   
   // 산출물 생성
   generateDeliverables: (data) => api.post('/api/v1/projects/generate-deliverables', data),
+  
+  // 외부 플랫폼 연동
+  exportToJira: (projectId, wbsData) => api.post(`/api/v1/projects/${projectId}/export/jira`, wbsData),
+  
+  exportToConfluence: (projectId, wbsData) => api.post(`/api/v1/projects/${projectId}/export/confluence`, wbsData),
+  
+  exportToNotion: (projectId, wbsData) => api.post(`/api/v1/projects/${projectId}/export/notion`, wbsData),
 };
 
 // 회의 관련 API
@@ -127,6 +152,16 @@ export const documentAPI = {
   downloadDocument: (id) => api.get(`/api/v1/documents/${id}/download`, {
     responseType: 'blob',
   }),
+  
+  // 파일 업로드
+  uploadFile: (formData) => api.post('/api/v1/documents/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  }),
+  
+  // 문서 내용 조회
+  getDocumentContent: (id) => api.get(`/api/v1/documents/${id}/content`),
 };
 
 // WBS 관련 API
@@ -147,17 +182,6 @@ export const wbsAPI = {
   generateWBS: (data) => api.post('/api/v1/wbs/generate', data),
 };
 
-// 설정 관련 API
-export const settingsAPI = {
-  // 설정 조회
-  getSettings: () => api.get('/api/v1/settings'),
-  
-  // 설정 저장
-  saveSettings: (data) => api.put('/api/v1/settings', data),
-  
-  // 연결 테스트
-  testConnection: (service) => api.post('/api/v1/settings/test-connection', { service }),
-};
 
 // 팀 관련 API
 export const teamAPI = {
@@ -181,6 +205,9 @@ export const teamAPI = {
   
   // 프로젝트 멤버 추가
   addProjectMember: (projectId, data) => api.post(`/api/v1/team/projects/${projectId}/members`, data),
+  
+  // 프로젝트 멤버 수정
+  updateProjectMember: (projectId, memberId, data) => api.put(`/api/v1/team/projects/${projectId}/members/${memberId}`, data),
   
   // 프로젝트 멤버 제거
   removeProjectMember: (projectId, memberId) => api.delete(`/api/v1/team/projects/${projectId}/members/${memberId}`),
@@ -211,6 +238,18 @@ export const systemAPI = {
   
   // 백업 목록
   getBackups: () => api.get('/api/v1/system/backups'),
+};
+
+// 설정 관련 API
+export const settingsAPI = {
+  // 설정 조회
+  getSettings: () => api.get('/api/v1/settings/'),
+  
+  // 설정 업데이트
+  updateSettings: (data) => api.put('/api/v1/settings/', data),
+  
+  // 연결 테스트
+  testConnection: (service) => api.post('/api/v1/settings/test-connection', { service }),
 };
 
 // 파일 업로드 유틸리티

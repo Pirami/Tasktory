@@ -14,6 +14,8 @@ class Project(Base):
     name = Column(String(255), nullable=False)
     description = Column(Text)
     status = Column(String(50), default="planning")  # planning, active, completed, cancelled
+    start_date = Column(DateTime, nullable=True)  # 프로젝트 시작일
+    end_date = Column(DateTime, nullable=True)  # 프로젝트 종료일
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -21,7 +23,6 @@ class Project(Base):
     wbs_items = relationship("WBSItem", back_populates="project")
     meetings = relationship("Meeting", back_populates="project")
     documents = relationship("Document", back_populates="project")
-    members = relationship("ProjectMember", back_populates="project")
 
 class WBSItem(Base):
     """WBS(Work Breakdown Structure) 아이템 모델"""
@@ -69,12 +70,14 @@ class Document(Base):
     __tablename__ = "documents"
     
     id = Column(Integer, primary_key=True, index=True)
-    project_id = Column(Integer, ForeignKey("projects.id"))
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=True)
+    project_name = Column(String(255), nullable=True)  # 직접 입력된 프로젝트명
     title = Column(String(255), nullable=False)
     document_type = Column(String(100))  # proposal, rfp, design, manual, etc.
+    description = Column(Text)  # 문서 설명
     content = Column(Text)
     file_path = Column(String(500))
-    status = Column(String(50), default="draft")  # draft, review, approved
+    status = Column(String(50), default="draft")  # draft, review, approved, completed
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     

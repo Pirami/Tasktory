@@ -32,6 +32,7 @@ import {
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  Edit as EditIcon,
   Person as PersonIcon,
   Assignment as AssignmentIcon,
   Schedule as ScheduleIcon,
@@ -45,6 +46,8 @@ const ProjectMemberManagement = () => {
   const [selectedProject, setSelectedProject] = useState(null);
   const [loading, setLoading] = useState(false);
   const [openDialog, setOpenDialog] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editingMember, setEditingMember] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   // 폼 상태
@@ -117,6 +120,8 @@ const ProjectMemberManagement = () => {
       showSnackbar('먼저 프로젝트를 선택해주세요', 'warning');
       return;
     }
+    setEditMode(false);
+    setEditingMember(null);
     setFormData({
       project_id: selectedProject.id,
       team_member_id: '',
@@ -129,15 +134,47 @@ const ProjectMemberManagement = () => {
     setOpenDialog(true);
   };
 
+  const handleEditMember = (member) => {
+    setEditMode(true);
+    setEditingMember(member);
+    setFormData({
+      project_id: selectedProject.id,
+      team_member_id: member.team_member_id,
+      role: member.role,
+      responsibility: member.responsibility || '',
+      allocation_percentage: member.allocation_percentage,
+      start_date: member.start_date ? new Date(member.start_date).toISOString().split('T')[0] : '',
+      end_date: member.end_date ? new Date(member.end_date).toISOString().split('T')[0] : '',
+    });
+    setOpenDialog(true);
+  };
+
   const handleCloseDialog = () => {
     setOpenDialog(false);
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value
+      };
+      
+      // 시작일이나 종료일이 변경되면 할당 비율 자동 계산
+      if ((field === 'start_date' || field === 'end_date') && 
+          newData.start_date && newData.end_date && 
+          selectedProject?.start_date && selectedProject?.end_date) {
+        const calculatedPercentage = calculateAllocationPercentage(
+          newData.start_date,
+          newData.end_date,
+          selectedProject.start_date,
+          selectedProject.end_date
+        );
+        newData.allocation_percentage = calculatedPercentage;
+      }
+      
+      return newData;
+    });
   };
 
   const handleSubmit = async () => {
@@ -148,13 +185,19 @@ const ProjectMemberManagement = () => {
         end_date: formData.end_date ? new Date(formData.end_date).toISOString() : null,
       };
 
-      await teamAPI.addProjectMember(selectedProject.id, submitData);
-      showSnackbar('프로젝트 멤버가 추가되었습니다');
+      if (editMode) {
+        await teamAPI.updateProjectMember(selectedProject.id, editingMember.id, submitData);
+        showSnackbar('프로젝트 멤버 정보가 수정되었습니다');
+      } else {
+        await teamAPI.addProjectMember(selectedProject.id, submitData);
+        showSnackbar('프로젝트 멤버가 추가되었습니다');
+      }
+      
       handleCloseDialog();
       fetchProjectMembers(selectedProject.id);
     } catch (error) {
-      console.error('프로젝트 멤버 추가 실패:', error);
-      showSnackbar('프로젝트 멤버 추가에 실패했습니다', 'error');
+      console.error('프로젝트 멤버 처리 실패:', error);
+      showSnackbar(editMode ? '프로젝트 멤버 수정에 실패했습니다' : '프로젝트 멤버 추가에 실패했습니다', 'error');
     }
   };
 
@@ -191,6 +234,41 @@ const ProjectMemberManagement = () => {
     return teamMembers.filter(member => 
       member.availability && !assignedMemberIds.includes(member.id)
     );
+  };
+
+  // 할당 비율 자동 계산 함수
+  const calculateAllocationPercentage = (memberStartDate, memberEndDate, projectStartDate, projectEndDate) => {
+    if (!memberStartDate || !memberEndDate || !projectStartDate || !projectEndDate) {
+      return 100; // 기본값
+    }
+
+    const memberStart = new Date(memberStartDate);
+    const memberEnd = new Date(memberEndDate);
+    const projectStart = new Date(projectStartDate);
+    const projectEnd = new Date(projectEndDate);
+
+    // 프로젝트 전체 기간 (일)
+    const totalProjectDays = Math.ceil((projectEnd - projectStart) / (1000 * 60 * 60 * 24));
+    
+    // 멤버 투입 기간 (일)
+    const memberDays = Math.ceil((memberEnd - memberStart) / (1000 * 60 * 60 * 24));
+    
+    // 할당 비율 계산 (투입 기간 / 전체 기간 * 100)
+    const percentage = Math.round((memberDays / totalProjectDays) * 100);
+    
+    return Math.min(Math.max(percentage, 0), 100); // 0-100 범위로 제한
+  };
+
+  // 프로젝트 기간 정보 표시
+  const getProjectDuration = () => {
+    if (!selectedProject || !selectedProject.start_date || !selectedProject.end_date) {
+      return "미정";
+    }
+    
+    const startDate = new Date(selectedProject.start_date);
+    const endDate = new Date(selectedProject.end_date);
+    
+    return `${startDate.toLocaleDateString()} ~ ${endDate.toLocaleDateString()}`;
   };
 
   return (
@@ -230,9 +308,14 @@ const ProjectMemberManagement = () => {
                 <Box>
                   <Typography variant="h5">{selectedProject.name}</Typography>
                   <Typography color="textSecondary">{selectedProject.description}</Typography>
-                  <Typography variant="body2" sx={{ mt: 1 }}>
-                    상태: <Chip label={selectedProject.status} color="primary" size="small" />
-                  </Typography>
+                  <Box sx={{ mt: 1, display: 'flex', gap: 2, alignItems: 'center' }}>
+                    <Typography variant="body2">
+                      상태: <Chip label={selectedProject.status} color="primary" size="small" />
+                    </Typography>
+                    <Typography variant="body2">
+                      기간: {getProjectDuration()}
+                    </Typography>
+                  </Box>
                 </Box>
                 <Button
                   variant="contained"
@@ -318,15 +401,26 @@ const ProjectMemberManagement = () => {
                             </Box>
                           </TableCell>
                           <TableCell>
-                            <Tooltip title="프로젝트에서 제거">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleRemoveMember(member.id)}
-                                color="error"
-                              >
-                                <DeleteIcon />
-                              </IconButton>
-                            </Tooltip>
+                            <Box sx={{ display: 'flex', gap: 1 }}>
+                              <Tooltip title="멤버 정보 수정">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleEditMember(member)}
+                                  color="primary"
+                                >
+                                  <EditIcon />
+                                </IconButton>
+                              </Tooltip>
+                              <Tooltip title="프로젝트에서 제거">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleRemoveMember(member.id)}
+                                  color="error"
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -339,9 +433,9 @@ const ProjectMemberManagement = () => {
         </>
       )}
 
-      {/* 멤버 추가 다이얼로그 */}
+      {/* 멤버 추가/수정 다이얼로그 */}
       <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="md" fullWidth>
-        <DialogTitle>프로젝트 멤버 추가</DialogTitle>
+        <DialogTitle>{editMode ? '프로젝트 멤버 수정' : '프로젝트 멤버 추가'}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ mt: 1 }}>
             <Grid item xs={12}>
@@ -350,22 +444,41 @@ const ProjectMemberManagement = () => {
                 <Select
                   value={formData.team_member_id}
                   onChange={(e) => handleInputChange('team_member_id', e.target.value)}
+                  disabled={editMode}
                 >
-                  {getAvailableMembers().map((member) => (
-                    <MenuItem key={member.id} value={member.id}>
+                  {editMode ? (
+                    <MenuItem value={formData.team_member_id}>
                       <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
-                          {member.name.charAt(0)}
+                          {teamMembers.find(m => m.id === formData.team_member_id)?.name.charAt(0)}
                         </Avatar>
                         <Box>
-                          <Typography variant="body1">{member.name}</Typography>
+                          <Typography variant="body1">
+                            {teamMembers.find(m => m.id === formData.team_member_id)?.name}
+                          </Typography>
                           <Typography variant="caption" color="textSecondary">
-                            {member.position} • {member.skill_level}
+                            {teamMembers.find(m => m.id === formData.team_member_id)?.position} • {teamMembers.find(m => m.id === formData.team_member_id)?.skill_level}
                           </Typography>
                         </Box>
                       </Box>
                     </MenuItem>
-                  ))}
+                  ) : (
+                    getAvailableMembers().map((member) => (
+                      <MenuItem key={member.id} value={member.id}>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <Avatar sx={{ mr: 2, width: 32, height: 32 }}>
+                            {member.name.charAt(0)}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body1">{member.name}</Typography>
+                            <Typography variant="caption" color="textSecondary">
+                              {member.position} • {member.skill_level}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </MenuItem>
+                    ))
+                  )}
                 </Select>
               </FormControl>
             </Grid>
@@ -390,6 +503,8 @@ const ProjectMemberManagement = () => {
                 value={formData.allocation_percentage}
                 onChange={(e) => handleInputChange('allocation_percentage', parseInt(e.target.value) || 0)}
                 inputProps={{ min: 0, max: 100 }}
+                helperText="투입 기간에 따라 자동 계산됩니다"
+                disabled={formData.start_date && formData.end_date && selectedProject?.start_date && selectedProject?.end_date}
               />
             </Grid>
             <Grid item xs={12}>
@@ -428,7 +543,7 @@ const ProjectMemberManagement = () => {
         <DialogActions>
           <Button onClick={handleCloseDialog}>취소</Button>
           <Button onClick={handleSubmit} variant="contained">
-            추가
+            {editMode ? '수정' : '추가'}
           </Button>
         </DialogActions>
       </Dialog>

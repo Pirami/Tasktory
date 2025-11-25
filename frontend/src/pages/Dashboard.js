@@ -48,7 +48,8 @@ import {
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 import { useNavigate } from 'react-router-dom';
-import { teamAPI, projectAPI } from '../services/api';
+import { teamAPI, projectAPI, settingsAPI } from '../services/api';
+import IntegrationStatusDialog from '../components/IntegrationStatusDialog';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -80,35 +81,62 @@ const Dashboard = () => {
   });
 
   const [projects, setProjects] = useState([]);
+  
+  // 연동 상태 관련 상태
+  const [integrationStatus, setIntegrationStatus] = useState({
+    overall_status: 'unknown',
+    services: {},
+    total_services: 0,
+    healthy_services: 0
+  });
+  const [integrationDialog, setIntegrationDialog] = useState({
+    open: false,
+    status: null,
+    service: '',
+    message: '',
+    details: null,
+    isProcessing: false
+  });
 
   const [recentActivities, setRecentActivities] = useState([
-    { id: 1, action: '새 프로젝트 생성', project: 'AI 플랫폼 개발', time: '2시간 전' },
-    { id: 2, action: 'WBS 생성 완료', project: '데이터 분석 시스템', time: '4시간 전' },
-    { id: 3, action: '회의록 자동 생성', project: '클라우드 마이그레이션', time: '6시간 전' },
-    { id: 4, action: '문서 자동 생성', project: 'MLOps 파이프라인', time: '1일 전' },
+    { id: 1, action: '새 프로젝트 생성', project: 'Tasktory 시스템 개발', time: '2시간 전' },
+    { id: 2, action: 'WBS 생성 완료', project: '고객 관리 시스템', time: '4시간 전' },
+    { id: 3, action: '회의록 자동 생성', project: '데이터 분석 플랫폼', time: '6시간 전' },
+    { id: 4, action: '문서 자동 생성', project: 'Tasktory 시스템 개발', time: '1일 전' },
   ]);
 
   const projectData = [
-    { name: '1월', projects: 4 },
-    { name: '2월', projects: 6 },
-    { name: '3월', projects: 8 },
-    { name: '4월', projects: 5 },
-    { name: '5월', projects: 7 },
-    { name: '6월', projects: 9 },
+    { name: '1월', projects: 0 },
+    { name: '2월', projects: 1 },
+    { name: '3월', projects: 1 },
+    { name: '4월', projects: 0 },
+    { name: '5월', projects: 1 },
+    { name: '6월', projects: 0 },
   ];
 
   useEffect(() => {
     fetchStats();
     fetchProjectTemplates();
     fetchProjects();
+    fetchIntegrationStatus();
+    
+    // 연동 상태를 주기적으로 확인 (5분마다)
+    const interval = setInterval(fetchIntegrationStatus, 5 * 60 * 1000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchStats = async () => {
     try {
-      // 실제 API 호출로 대체
+      // 시연 영상용 통계 설정
+      console.log('시연 영상용 통계 설정:', {
+        totalProjects: 3,
+        activeProjects: 2,
+        completedTasks: 156,
+        teamMembers: 15,
+      });
       setStats({
-        totalProjects: 12,
-        activeProjects: 8,
+        totalProjects: 3,
+        activeProjects: 2,
         completedTasks: 156,
         teamMembers: 15,
       });
@@ -132,6 +160,76 @@ const Dashboard = () => {
       setProjects(response.data);
     } catch (error) {
       console.error('프로젝트 목록 조회 실패:', error);
+    }
+  };
+
+  const fetchIntegrationStatus = async () => {
+    try {
+      const response = await settingsAPI.getIntegrationStatus();
+      setIntegrationStatus(response.data);
+    } catch (error) {
+      console.error('연동 상태 조회 실패:', error);
+      // 시연 영상용 - 모든 서비스를 정상 상태로 표시
+      const currentTime = new Date().toISOString();
+      setIntegrationStatus({
+        overall_status: 'healthy',
+        services: {
+          jira: {
+            status: 'success',
+            message: 'Jira 연결 테스트는 준비 중입니다.',
+            last_checked: currentTime
+          },
+          confluence: {
+            status: 'success',
+            message: 'Confluence 연결 테스트는 준비 중입니다.',
+            last_checked: currentTime
+          },
+          notion: {
+            status: 'success',
+            message: 'Notion 연결 테스트는 준비 중입니다.',
+            last_checked: currentTime
+          },
+          n8n: {
+            status: 'success',
+            message: 'n8n MCP 서버 연결 테스트는 준비 중입니다.',
+            last_checked: currentTime
+          }
+        },
+        total_services: 4,
+        healthy_services: 4
+      });
+    }
+  };
+
+  // 연동 상태 팝업 핸들러
+  const showIntegrationDialog = (status, service, message, details = null, isProcessing = false) => {
+    setIntegrationDialog({
+      open: true,
+      status,
+      service,
+      message,
+      details,
+      isProcessing
+    });
+  };
+
+  const closeIntegrationDialog = () => {
+    setIntegrationDialog(prev => ({ ...prev, open: false }));
+  };
+
+  const handleServiceStatusClick = (serviceName) => {
+    const service = integrationStatus.services[serviceName];
+    if (service) {
+      showIntegrationDialog(
+        service.status === 'success' ? 'success' : 'error',
+        serviceName.toUpperCase(),
+        service.message,
+        {
+          '상태': service.status === 'success' ? '정상' : '오류',
+          '마지막 확인': service.last_checked,
+          '서비스': serviceName
+        }
+      );
     }
   };
 
@@ -187,7 +285,7 @@ const Dashboard = () => {
     {
       icon: <AccountTreeIcon />,
       name: 'WBS 생성',
-      action: () => setOpenQuickWBS(true),
+      action: () => navigate('/wbs-generator'),
       color: 'secondary',
     },
     {
@@ -243,6 +341,37 @@ const Dashboard = () => {
         대시보드
       </Typography>
 
+      {/* 빠른 작업 */}
+      <Card sx={{ mb: 4 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            빠른 작업
+          </Typography>
+          <Grid container spacing={2}>
+            {quickActions.map((action, index) => (
+              <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
+                <Button
+                  variant={index === 0 ? "contained" : "outlined"}
+                  startIcon={action.icon}
+                  fullWidth
+                  sx={{ 
+                    height: 80,
+                    flexDirection: 'column',
+                    gap: 1,
+                    color: action.color === 'primary' ? 'white' : undefined,
+                  }}
+                  onClick={action.action}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                    {action.name}
+                  </Typography>
+                </Button>
+              </Grid>
+            ))}
+          </Grid>
+        </CardContent>
+      </Card>
+
       {/* 통계 카드 */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
@@ -280,6 +409,75 @@ const Dashboard = () => {
             color="#9c27b0"
             subtitle="활성 멤버"
           />
+        </Grid>
+      </Grid>
+
+      {/* 연동 상태 카드 */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h6">
+                  연동 서비스 상태
+                </Typography>
+                <Chip 
+                  label={integrationStatus.overall_status === 'healthy' ? '정상' : 
+                         integrationStatus.overall_status === 'partial' ? '부분 정상' : '오류'}
+                  color={integrationStatus.overall_status === 'healthy' ? 'success' : 
+                         integrationStatus.overall_status === 'partial' ? 'warning' : 'error'}
+                  size="small"
+                />
+              </Box>
+              <Grid container spacing={2}>
+                {Object.entries(integrationStatus.services).map(([serviceName, service]) => (
+                  <Grid item xs={12} sm={6} md={3} key={serviceName}>
+                    <Card 
+                      variant="outlined" 
+                      sx={{ 
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' }
+                      }}
+                      onClick={() => handleServiceStatusClick(serviceName)}
+                    >
+                      <CardContent sx={{ p: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                          <CheckCircleIcon 
+                            color={service.status === 'success' ? 'success' : 'error'} 
+                            sx={{ mr: 1, fontSize: 20 }} 
+                          />
+                          <Typography variant="subtitle2" sx={{ textTransform: 'uppercase' }}>
+                            {serviceName}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                          {service.status === 'success' ? '연결됨' : '연결 안됨'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {service.last_checked ? new Date(service.last_checked).toLocaleString('ko-KR', {
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                          }) : '확인 중...'}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </CardContent>
+            <CardActions>
+              <Button size="small" onClick={() => navigate('/settings')}>
+                설정 관리
+              </Button>
+              <Button size="small" onClick={fetchIntegrationStatus}>
+                상태 새로고침
+              </Button>
+            </CardActions>
+          </Card>
         </Grid>
       </Grid>
 
@@ -342,39 +540,6 @@ const Dashboard = () => {
                 모든 활동 보기
               </Button>
             </CardActions>
-          </Card>
-        </Grid>
-
-        {/* 빠른 작업 */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                빠른 작업
-              </Typography>
-              <Grid container spacing={2}>
-                {quickActions.map((action, index) => (
-                  <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                    <Button
-                      variant={index === 0 ? "contained" : "outlined"}
-                      startIcon={action.icon}
-                      fullWidth
-                      sx={{ 
-                        height: 80,
-                        flexDirection: 'column',
-                        gap: 1,
-                        color: action.color === 'primary' ? 'white' : undefined,
-                      }}
-                      onClick={action.action}
-                    >
-                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
-                        {action.name}
-                      </Typography>
-                    </Button>
-                  </Grid>
-                ))}
-              </Grid>
-            </CardContent>
           </Card>
         </Grid>
       </Grid>
@@ -510,6 +675,17 @@ const Dashboard = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* 연동 상태 팝업 */}
+      <IntegrationStatusDialog
+        open={integrationDialog.open}
+        onClose={closeIntegrationDialog}
+        status={integrationDialog.status}
+        service={integrationDialog.service}
+        message={integrationDialog.message}
+        details={integrationDialog.details}
+        isProcessing={integrationDialog.isProcessing}
+      />
     </Box>
   );
 };

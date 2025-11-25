@@ -44,7 +44,6 @@ class ProjectMember(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # 관계
-    project = relationship("Project", back_populates="members")
     team_member = relationship("TeamMember", back_populates="project_memberships")
 
 class ProjectTemplate(Base):
