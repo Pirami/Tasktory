@@ -201,7 +201,7 @@ async def generate_mcp_wbs(request: N8nMCPWBSRequest):
 
 @router.post("/generate-enhanced-wbs")
 async def generate_enhanced_wbs(request: EnhancedWBSRequest):
-    """고도화된 WBS 생성 (요건 추출, Task 분배, 기간 추정)"""
+    """ WBS 생성 (요건 추출, Task 분배, 기간 추정)"""
     try:
         enhanced_service = EnhancedWBSService()
         result = await enhanced_service.generate_enhanced_wbs(

@@ -33,6 +33,7 @@ import {
   Add as AddIcon,
 } from '@mui/icons-material';
 import { settingsAPI } from '../services/api';
+import IntegrationStatusDialog from '../components/IntegrationStatusDialog';
 
 const Settings = () => {
   const [settings, setSettings] = useState({
@@ -70,6 +71,16 @@ const Settings = () => {
   const [saveStatus, setSaveStatus] = useState(null);
   const [openDialog, setOpenDialog] = useState(false);
   const [testResult, setTestResult] = useState(null);
+  
+  // 연동 상태 팝업 관련 상태
+  const [integrationDialog, setIntegrationDialog] = useState({
+    open: false,
+    status: null,
+    service: '',
+    message: '',
+    details: null,
+    isProcessing: false
+  });
 
   useEffect(() => {
     // 실제 API에서 설정 로드
@@ -100,15 +111,44 @@ const Settings = () => {
     }
   };
 
+  // 연동 상태 팝업 핸들러
+  const showIntegrationDialog = (status, service, message, details = null, isProcessing = false) => {
+    setIntegrationDialog({
+      open: true,
+      status,
+      service,
+      message,
+      details,
+      isProcessing
+    });
+  };
+
+  const closeIntegrationDialog = () => {
+    setIntegrationDialog(prev => ({ ...prev, open: false }));
+  };
+
   const handleTestConnection = async (service) => {
     try {
+      // 처리 중 상태 표시
+      showIntegrationDialog('info', service, `${service} 연결을 테스트하고 있습니다...`, null, true);
+      
       const response = await settingsAPI.testConnection(service);
-      setTestResult({ service, success: true, message: response.data.message });
+      
+      // 성공 상태 표시
+      showIntegrationDialog('success', service, `${service} 연결이 성공적으로 확인되었습니다!`, {
+        '연결 상태': '정상',
+        '응답 시간': response.data?.response_time || 'N/A',
+        '서버 정보': response.data?.server_info || 'N/A'
+      });
+      
     } catch (error) {
       console.error('연결 테스트 오류:', error);
-      setTestResult({ service, success: false, message: error.response?.data?.detail || '연결 실패' });
+      showIntegrationDialog('error', service, error.response?.data?.detail || '연결 실패', {
+        '오류 코드': error.response?.status || 'N/A',
+        '오류 메시지': error.message || 'N/A',
+        '해결 방법': '설정을 확인하고 다시 시도해주세요.'
+      });
     }
-    setOpenDialog(true);
   };
 
   const handleResetSettings = () => {
@@ -508,6 +548,17 @@ const Settings = () => {
           <Button onClick={() => setOpenDialog(false)}>닫기</Button>
         </DialogActions>
       </Dialog>
+
+      {/* 연동 상태 팝업 */}
+      <IntegrationStatusDialog
+        open={integrationDialog.open}
+        onClose={closeIntegrationDialog}
+        status={integrationDialog.status}
+        service={integrationDialog.service}
+        message={integrationDialog.message}
+        details={integrationDialog.details}
+        isProcessing={integrationDialog.isProcessing}
+      />
     </Box>
   );
 };

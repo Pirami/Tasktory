@@ -16,7 +16,7 @@ Tasktory는 n8n MCP 서버를 통해 LLM과 연동하여 프로젝트 관리 업
 - **출력**: WBS 및 역할 분배 (기술 수준별 개발자 할당)
 - **특징**: AI 기반 요구사항 분석 및 최적화된 작업 할당
 
-#### 🚀 고도화된 WBS 생성 기능
+#### WBS 생성 기능
 
 - **요구사항 추출**: 제안서, RFP, 프로젝트 목표를 AI가 분석하여 상세한 요구사항 추출
 - **기술적 복잡도 평가**: 프로젝트의 기술적 난이도와 복잡도를 자동 평가
@@ -174,7 +174,7 @@ cd Tasktory
 - `GET /api/v1/projects/` - 프로젝트 목록
 - `POST /api/v1/projects/generate-wbs` - 기본 WBS 생성
 - `POST /api/v1/projects/generate-mcp-wbs` - n8n MCP 서버 기반 LLM 연동 WBS 생성
-- `POST /api/v1/projects/generate-enhanced-wbs` - 고도화된 WBS 생성 (요건 추출, Task 분배, 기간 추정)
+- `POST /api/v1/projects/generate-enhanced-wbs` -  WBS 생성 (요건 추출, Task 분배, 기간 추정)
 - `POST /api/v1/projects/generate-documents` - 설계문서 생성
 - `POST /api/v1/projects/generate-deliverables` - 산출물 생성
 

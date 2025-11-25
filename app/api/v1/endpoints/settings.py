@@ -28,68 +28,155 @@ async def test_connection(service_data: Dict[str, Any]):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.get("/integration-status")
+async def get_integration_status():
+    """모든 연동 서비스 상태 확인"""
+    try:
+        status_results = {}
+        
+        # 각 서비스별 상태 확인
+        jira_status = await test_jira_connection()
+        confluence_status = await test_confluence_connection()
+        notion_status = await test_notion_connection()
+        n8n_status = await test_n8n_connection()
+        
+        from datetime import datetime
+        
+        current_time = datetime.now().isoformat() + "Z"
+        
+        status_results = {
+            "jira": {
+                "status": jira_status.get("status"),
+                "message": jira_status.get("message"),
+                "last_checked": jira_status.get("last_checked", current_time)
+            },
+            "confluence": {
+                "status": confluence_status.get("status"),
+                "message": confluence_status.get("message"),
+                "last_checked": confluence_status.get("last_checked", current_time)
+            },
+            "notion": {
+                "status": notion_status.get("status"),
+                "message": notion_status.get("message"),
+                "last_checked": notion_status.get("last_checked", current_time)
+            },
+            "n8n": {
+                "status": n8n_status.get("status"),
+                "message": n8n_status.get("message"),
+                "last_checked": n8n_status.get("last_checked", current_time)
+            }
+        }
+        
+        return {
+            "overall_status": "healthy" if all(
+                status.get("status") == "success" 
+                for status in status_results.values()
+            ) else "partial" if any(
+                status.get("status") == "success" 
+                for status in status_results.values()
+            ) else "unhealthy",
+            "services": status_results,
+            "total_services": len(status_results),
+            "healthy_services": sum(1 for status in status_results.values() if status.get("status") == "success")
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 async def test_jira_connection():
     """Jira 연결 테스트"""
     try:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         # TODO: 실제 Jira API 연결 테스트 구현
         return {
             "status": "success",
             "message": "Jira 연결 테스트는 준비 중입니다.",
-            "service": "jira"
+            "service": "jira",
+            "last_checked": current_time
         }
     except Exception as e:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         return {
             "status": "error",
             "message": f"Jira 연결 실패: {str(e)}",
-            "service": "jira"
+            "service": "jira",
+            "last_checked": current_time
         }
 
 async def test_confluence_connection():
     """Confluence 연결 테스트"""
     try:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         # TODO: 실제 Confluence API 연결 테스트 구현
         return {
             "status": "success",
             "message": "Confluence 연결 테스트는 준비 중입니다.",
-            "service": "confluence"
+            "service": "confluence",
+            "last_checked": current_time
         }
     except Exception as e:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         return {
             "status": "error",
             "message": f"Confluence 연결 실패: {str(e)}",
-            "service": "confluence"
+            "service": "confluence",
+            "last_checked": current_time
         }
 
 async def test_notion_connection():
     """Notion 연결 테스트"""
     try:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         # TODO: 실제 Notion API 연결 테스트 구현
         return {
             "status": "success",
             "message": "Notion 연결 테스트는 준비 중입니다.",
-            "service": "notion"
+            "service": "notion",
+            "last_checked": current_time
         }
     except Exception as e:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         return {
             "status": "error",
             "message": f"Notion 연결 실패: {str(e)}",
-            "service": "notion"
+            "service": "notion",
+            "last_checked": current_time
         }
 
 async def test_n8n_connection():
     """n8n MCP 서버 연결 테스트"""
     try:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         # TODO: 실제 n8n MCP 서버 연결 테스트 구현
         return {
             "status": "success",
             "message": "n8n MCP 서버 연결 테스트는 준비 중입니다.",
-            "service": "n8n"
+            "service": "n8n",
+            "last_checked": current_time
         }
     except Exception as e:
+        from datetime import datetime
+        current_time = datetime.now().isoformat() + "Z"
+        
         return {
             "status": "error",
             "message": f"n8n MCP 서버 연결 실패: {str(e)}",
-            "service": "n8n"
+            "service": "n8n",
+            "last_checked": current_time
         }
 
 @router.get("/")

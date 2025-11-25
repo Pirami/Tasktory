@@ -1,5 +1,5 @@
 """
-고도화된 WBS 생성 서비스
+ WBS 생성 서비스
 요건 추출, Task 분배, 기간 추정을 포함한 종합적인 프로젝트 분석 서비스
 """
 import json
@@ -44,7 +44,7 @@ class ProjectPhase:
     responsible_team: List[str]
 
 class EnhancedWBSService:
-    """고도화된 WBS 생성 서비스"""
+    """ WBS 생성 서비스"""
     
     def __init__(self):
         self.openai_client = AsyncOpenAI(api_key=settings.openai_api_key)
@@ -101,7 +101,7 @@ class EnhancedWBSService:
         team_members: List[Dict[str, Any]],
         additional_files: List[Dict[str, str]] = None
     ) -> Dict[str, Any]:
-        """고도화된 WBS 생성"""
+        """ WBS 생성"""
         
         try:
             # 1. 요구사항 분석

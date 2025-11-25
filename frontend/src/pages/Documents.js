@@ -99,9 +99,9 @@ const Documents = () => {
   useEffect(() => {
     // 프로젝트 목록 로드
     setProjects([
-      { id: 1, name: 'AI 기반 데이터 분석 플랫폼' },
-      { id: 2, name: '클라우드 마이그레이션' },
-      { id: 3, name: 'MLOps 파이프라인 구축' },
+      { id: 1, name: 'Tasktory 시스템 개발' },
+      { id: 2, name: '고객 관리 시스템' },
+      { id: 3, name: '데이터 분석 플랫폼' },
     ]);
 
     // 문서 목록 로드

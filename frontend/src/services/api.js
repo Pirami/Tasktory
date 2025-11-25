@@ -76,7 +76,7 @@ export const projectAPI = {
   // MCP WBS 생성
   generateMCPWBS: (data) => api.post('/api/v1/projects/generate-mcp-wbs', data),
   
-  // 고도화된 WBS 생성
+  //  WBS 생성
   generateEnhancedWBS: (data) => api.post('/api/v1/projects/generate-enhanced-wbs', data),
   
   // 프로젝트 팀원 정보 조회

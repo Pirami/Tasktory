@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-고도화된 WBS 생성 테스트 스크립트
+ WBS 생성 테스트 스크립트
 """
 import asyncio
 import requests
@@ -8,7 +8,7 @@ import json
 from typing import Dict, Any
 
 def test_enhanced_wbs_generation(base_url: str = "http://localhost:8000") -> bool:
-    """고도화된 WBS 생성 테스트"""
+    """WBS 생성 테스트"""
     try:
         test_data = {
             "project_id": 1,
@@ -127,7 +127,7 @@ def test_enhanced_wbs_generation(base_url: str = "http://localhost:8000") -> boo
             ]
         }
         
-        print("🚀 고도화된 WBS 생성 테스트 시작...")
+        print("🚀 WBS 생성 테스트 시작...")
         print(f"📊 테스트 데이터: {len(test_data['team_members'])}명의 팀원, {len(test_data['additional_files'])}개의 추가 파일")
         
         response = requests.post(
@@ -139,7 +139,7 @@ def test_enhanced_wbs_generation(base_url: str = "http://localhost:8000") -> boo
         
         if response.status_code == 200:
             result = response.json()
-            print("✅ 고도화된 WBS 생성 성공")
+            print("✅  WBS 생성 성공")
             print(f"   - 상태: {result.get('status', 'N/A')}")
             
             if result.get('status') == 'success':
@@ -182,20 +182,20 @@ def test_enhanced_wbs_generation(base_url: str = "http://localhost:8000") -> boo
                 print(f"   - 오류: {result.get('error', '알 수 없는 오류')}")
                 return False
         else:
-            print(f"❌ 고도화된 WBS 생성 실패: {response.status_code}")
+            print(f"❌  WBS 생성 실패: {response.status_code}")
             print(f"   응답: {response.text}")
             return False
             
     except requests.exceptions.Timeout:
-        print("❌ 고도화된 WBS 생성 타임아웃 (180초 초과)")
+        print("❌  WBS 생성 타임아웃 (180초 초과)")
         return False
     except Exception as e:
-        print(f"❌ 고도화된 WBS 생성 테스트 오류: {e}")
+        print(f"❌  WBS 생성 테스트 오류: {e}")
         return False
 
 def main():
     """메인 실행 함수"""
-    print("🎯 고도화된 WBS 생성 테스트")
+    print("🎯  WBS 생성 테스트")
     print("=" * 50)
     
     base_url = "http://localhost:8000"
@@ -210,11 +210,11 @@ def main():
         print("❌ 서버에 연결할 수 없습니다.")
         return
     
-    # 고도화된 WBS 생성 테스트
+    #  WBS 생성 테스트
     success = test_enhanced_wbs_generation(base_url)
     
     if success:
-        print("\n🎉 고도화된 WBS 생성 테스트 성공!")
+        print("\n🎉  WBS 생성 테스트 성공!")
         print("📋 주요 기능:")
         print("  ✅ 요구사항 추출 및 분석")
         print("  ✅ 기술적 복잡도 평가")
@@ -224,7 +224,7 @@ def main():
         print("  ✅ 팀원 작업량 분배")
         print("  ✅ 타임라인 생성")
     else:
-        print("\n⚠️ 고도화된 WBS 생성 테스트 실패")
+        print("\n⚠️  WBS 생성 테스트 실패")
 
 if __name__ == "__main__":
     try:
